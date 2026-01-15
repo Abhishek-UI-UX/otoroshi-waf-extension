@@ -187,6 +187,7 @@ class CloudApimWaf extends NgRequestTransformer {
     ctx: NgTransformerResponseContext
   )(implicit env: Env, ec: ExecutionContext, mat: Materializer): Future[Either[mvc.Result, NgPluginHttpResponse]] = {
     ctx.attrs.get(CloudApimWafKeys.SecLangEngineKey) match {
+      case Some(ContextualCloudApimWafConfig(_, config)) if ctx.otoroshiResponse.contentType.nonEmpty && config.outputBodyMimetypes.nonEmpty && !config.outputBodyMimetypes.contains(ctx.otoroshiResponse.contentType.get) => ctx.otoroshiResponse.rightf
       case Some(ContextualCloudApimWafConfig(engine, config)) => {
         val hasBody = ctx.request.theHasBody
         if (hasBody && config.inspectOutputBody) {

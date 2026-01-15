@@ -25,7 +25,7 @@ case class CloudApimWafConfig(
    inspectOutputBody: Boolean = true,
    inputBodyLimit: Option[Long] = None,
    outputBodyLimit: Option[Long] = None,
-   outputBodyMimetype: Seq[String] = Seq.empty,
+   outputBodyMimetypes: Seq[String] = Seq.empty,
    rules: Seq[String] = Seq.empty,
 ) extends EntityLocationSupport {
 
@@ -51,7 +51,7 @@ object CloudApimWafConfig {
       "inspect_output_body" -> o.inspectOutputBody,
       "input_body_limit" -> o.inputBodyLimit,
       "output_body_limit" -> o.outputBodyLimit,
-      "output_body_mimetypes" -> o.outputBodyMimetype,
+      "output_body_mimetypes" -> o.outputBodyMimetypes,
       "rules" -> o.rules,
     )
     override def reads(json: JsValue): JsResult[CloudApimWafConfig] = Try {
@@ -68,7 +68,7 @@ object CloudApimWafConfig {
         inspectOutputBody = json.select("inspect_output_body").asOpt[Boolean].getOrElse(true),
         inputBodyLimit = json.select("input_body_limit").asOpt[Long].filter(_ > 0L),
         outputBodyLimit = json.select("output_body_limit").asOpt[Long].filter(_ > 0L),
-        outputBodyMimetype = json.select("output_body_mimetypes").asOpt[Seq[String]].getOrElse(Seq.empty),
+        outputBodyMimetypes = json.select("output_body_mimetypes").asOpt[Seq[String]].getOrElse(Seq.empty),
         rules = json.select("rules").asOpt[Seq[String]].getOrElse(Seq.empty),
       )
     } match {

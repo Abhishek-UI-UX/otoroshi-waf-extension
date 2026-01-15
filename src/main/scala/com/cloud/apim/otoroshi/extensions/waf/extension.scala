@@ -42,7 +42,8 @@ class WafExtensionState(env: Env) {
 class CloudApimWafIntegration(env: Env, configuration: Configuration) extends SecLangIntegration {
 
   private val logger = Logger("cloud-apim-waf")
-  private val maxCacheItems = configuration.getOptional[Int]("factory.max-cache-items").getOrElse(1000)
+  private val maxCacheItems = configuration.getOptional[Int]("integration.max-cache-items").getOrElse(1000)
+  private val log = configuration.getOptional[Boolean]("integration.log").getOrElse(true)
 
   private val cache = Scaffeine()
     .expireAfter[String, (CompiledProgram, FiniteDuration)](
@@ -53,10 +54,10 @@ class CloudApimWafIntegration(env: Env, configuration: Configuration) extends Se
     .maximumSize(maxCacheItems)
     .build[String, (CompiledProgram, FiniteDuration)]()
 
-  override def logDebug(msg: String): Unit = if (logger.isDebugEnabled) logger.debug(msg)
-  override def logInfo(msg: String): Unit = if (logger.isInfoEnabled) logger.info(msg)
+  override def logDebug(msg: String): Unit = if (log && logger.isDebugEnabled) logger.debug(msg)
+  override def logInfo(msg: String): Unit = if (log && logger.isInfoEnabled) logger.info(msg)
   override def logAudit(msg: String): Unit = ()
-  override def logError(msg: String): Unit = if (logger.isErrorEnabled) logger.error(msg)
+  override def logError(msg: String): Unit = if (log && logger.isErrorEnabled) logger.error(msg)
 
   override def getEnv: Map[String, String] = sys.env
 

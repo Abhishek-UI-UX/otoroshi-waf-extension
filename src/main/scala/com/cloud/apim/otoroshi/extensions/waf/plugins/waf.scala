@@ -15,7 +15,6 @@ import otoroshi.next.utils.JsonHelpers
 import otoroshi.security.IdGenerator
 import otoroshi.utils.http.RequestImplicits._
 import otoroshi.utils.syntax.implicits._
-import otoroshi.wasm.proxywasm.{NgCorazaWAF, NgCorazaWAFConfig}
 import otoroshi_plugins.com.cloud.apim.otoroshi.extensions.waf.CloudApimWafExtension
 import play.api.libs.json._
 import play.api.libs.typedmap.TypedKey
@@ -57,7 +56,7 @@ object RequestContextBuilder {
     val connParts = conn.split(":")
     RequestContext(
       method = request.method.toUpperCase,
-      uri = request.uri.toString,
+      uri = req.uri,
       headers = com.cloud.apim.seclang.model.Headers(req.headers.toMap.mapValues(_.toList)),
       cookies = req.cookies.map(c => (c.name, c.value)).groupBy(_._1).mapValues(_.map(_._2)).mapValues(_.toList),
       query = req.queryString.mapValues(_.toList),
@@ -158,7 +157,8 @@ class CloudApimWaf extends NgRequestTransformer {
   override def transformRequest(
     ctx: NgTransformerRequestContext
   )(implicit env: Env, ec: ExecutionContext, mat: Materializer): Future[Either[mvc.Result, NgPluginHttpRequest]] = {
-    ctx.attrs.get(CloudApimWafKeys.SecLangEngineKey) match {
+    val start = System.currentTimeMillis()
+    (ctx.attrs.get(CloudApimWafKeys.SecLangEngineKey) match {
       case Some(ContextualCloudApimWafConfig(engine, config)) => {
         val hasBody = ctx.request.theHasBody
         if (hasBody && config.inspectInputBody) {
@@ -202,6 +202,11 @@ class CloudApimWaf extends NgRequestTransformer {
         }
       }
       case None => ctx.otoroshiRequest.rightf
+    }).andThen {
+      case _ => {
+        val stop = System.currentTimeMillis()
+        println(s"waf eval in ${stop - start} ms")
+      }
     }
   }
 

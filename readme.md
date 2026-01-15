@@ -2,6 +2,11 @@
 
 A Web Application Firewall (WAF) extension for [Otoroshi](https://www.otoroshi.io/) that provides a JVM-native implementation of ModSecurity SecLang with the OWASP Core Rule Set (CRS) included.
 
+This extension is built on top of:
+
+- [seclang-engine](https://github.com/cloud-apim/seclang-engine) - A JVM-native implementation of the ModSecurity SecLang DSL
+- [seclang-engine-coreruleset](https://github.com/cloud-apim/seclang-engine-coreruleset) - The OWASP Core Rule Set (CRS) packaged for seclang-engine
+
 ## Features
 
 - **ModSecurity SecLang support**: Native JVM implementation of the ModSecurity SecLang DSL

@@ -140,7 +140,7 @@ class CloudApimWafExtension(val env: Env) extends AdminExtension {
              |    return {
              |      id: extensionId,
              |      categories:[{
-             |        title: 'Cloud APIM WAF',
+             |        title: 'WAF',
              |        description: 'All the features provided by the Cloud APIM WAF extension',
              |        features: [
              |          {

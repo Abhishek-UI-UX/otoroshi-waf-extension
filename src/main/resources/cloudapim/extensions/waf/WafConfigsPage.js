@@ -116,6 +116,7 @@ function MonacoRule(props) {
   if (v) {
     height = (v.split("\n").length * 19) + 10
   }
+  height = Math.max(height, 600);
   return React.createElement(MonacoInput, { ...props, label: '', height: height, language: 'ini', value: props.value[props.idx], onChange: (it) => {
     props.value[props.idx] = it;
     props.onChange(props.value);

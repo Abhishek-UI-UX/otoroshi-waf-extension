@@ -1,9 +1,10 @@
 package otoroshi_plugins.com.cloud.apim.otoroshi.extensions.waf
 
-import akka.stream.scaladsl.StreamConverters
+import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.util.ByteString
 import com.cloud.apim.otoroshi.extensions.waf.entities._
-import com.cloud.apim.seclang.model.{CompiledProgram, Disposition, MatchEvent, RequestContext, RuntimeState, SecLangEngineConfig, SecLangIntegration, SecLangPreset}
+import com.cloud.apim.seclang.impl.utils.StatusCodes
+import com.cloud.apim.seclang.model._
 import com.cloud.apim.seclang.scaladsl.SecLang
 import com.cloud.apim.seclang.scaladsl.coreruleset.EmbeddedCRSPreset
 import com.github.blemale.scaffeine.Scaffeine
@@ -12,18 +13,16 @@ import otoroshi.env.Env
 import otoroshi.events.AnalyticEvent
 import otoroshi.models._
 import otoroshi.next.extensions._
-import otoroshi.next.models.NgRoute
-import otoroshi.next.plugins.api.NgPluginHttpRequest
 import otoroshi.security.IdGenerator
 import otoroshi.utils.cache.types.UnboundedTrieMap
 import otoroshi.utils.syntax.implicits._
-import otoroshi_plugins.com.cloud.apim.otoroshi.extensions.waf.plugins.CloudApimWafTrailEvent
-import play.api.libs.json.{JsArray, JsNull, JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.mvc.{RequestHeader, Result, Results}
 import play.api.{Configuration, Logger}
-import play.api.mvc.{RequestHeader, Results}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.util.{Failure, Success, Try}
 
 class WafExtensionDatastores(env: Env, extensionId: AdminExtensionId) {
   val wafConfigDatastore: CloudApimWafConfigDatastore = new KvCloudApimWafConfigDatastore(extensionId, env.datastores.redis, env)
@@ -99,6 +98,23 @@ class CloudApimWafExtension(val env: Env) extends AdminExtension {
       path = "/extensions/assets/cloud-apim/extensions/waf/extension.js"
     )
   )
+
+  override def syncStates(): Future[Unit] = {
+    implicit val ec = env.otoroshiExecutionContext
+    implicit val ev = env
+    for {
+      configs <- datastores.wafConfigDatastore.findAllAndFillSecrets()
+    } yield {
+      states.updateConfigs(configs)
+      ()
+    }
+  }
+
+  override def entities(): Seq[AdminExtensionEntity[EntityLocationSupport]] = {
+    Seq(
+      AdminExtensionEntity(CloudApimWafConfig.resource(env, datastores, states)),
+    )
+  }
 
   def getResourceCode(path: String): String = {
     implicit val ec = env.otoroshiExecutionContext
@@ -210,21 +226,81 @@ class CloudApimWafExtension(val env: Env) extends AdminExtension {
     )
   )
 
-  override def syncStates(): Future[Unit] = {
+  override def backofficeAuthRoutes(): Seq[AdminExtensionBackofficeAuthRoute] = Seq(
+    AdminExtensionBackofficeAuthRoute(
+      method = "POST",
+      path = "/extensions/cloud-apim/extensions/waf/utils/_compile",
+      wantsBody = true,
+      handle = handleCompile
+    ),
+    AdminExtensionBackofficeAuthRoute(
+      method = "POST",
+      path = "/extensions/cloud-apim/extensions/waf/utils/_test",
+      wantsBody = true,
+      handle = handleTest
+    ),
+  )
+
+  def handleCompile(ctx: AdminExtensionRouterContext[AdminExtensionBackofficeAuthRoute], req: RequestHeader, user: Option[BackOfficeUser], body: Option[Source[ByteString, _]]): Future[Result] = {
     implicit val ec = env.otoroshiExecutionContext
+    implicit val mat = env.otoroshiMaterializer
     implicit val ev = env
-    for {
-      configs <- datastores.wafConfigDatastore.findAllAndFillSecrets()
-    } yield {
-      states.updateConfigs(configs)
-      ()
+    (body match {
+      case None => Results.Ok(Json.obj("done" -> false, "error" -> "no body")).vfuture
+      case Some(bodySource) => bodySource.runFold(ByteString.empty)(_ ++ _).flatMap { bodyRaw =>
+        val bodyJson = bodyRaw.utf8String.parseJson
+        val rules = bodyJson.select("rules").asOpt[List[String]].getOrElse(List.empty).filterNot(_.trim.startsWith("@import_preset ")).mkString("\n\n")
+        (SecLang.parse(rules) match {
+          case Left(err) => Results.Ok(Json.obj("done" -> false, "error" -> err))
+          case Right(conf) => Try(SecLang.compile(conf)) match {
+            case Failure(err) => Results.Ok(Json.obj("done" -> false, "error" -> err.getMessage))
+            case Success(_) => Results.Ok(Json.obj("done" -> true))
+          }
+        }).vfuture
+      }
+    }).recover {
+      case e: Throwable => {
+        e.printStackTrace()
+        Results.Ok(Json.obj("done" -> false, "error" -> e.getMessage))
+      }
     }
   }
 
-  override def entities(): Seq[AdminExtensionEntity[EntityLocationSupport]] = {
-    Seq(
-      AdminExtensionEntity(CloudApimWafConfig.resource(env, datastores, states)),
-    )
+  def handleTest(ctx: AdminExtensionRouterContext[AdminExtensionBackofficeAuthRoute], req: RequestHeader, user: Option[BackOfficeUser], body: Option[Source[ByteString, _]]): Future[Result] = {
+    implicit val ec = env.otoroshiExecutionContext
+    implicit val mat = env.otoroshiMaterializer
+    implicit val ev = env
+    (body match {
+      case None => Results.Ok(Json.obj("done" -> false, "error" -> "no body")).vfuture
+      case Some(bodySource) => bodySource.runFold(ByteString.empty)(_ ++ _).flatMap { bodyRaw =>
+        val bodyJson = bodyRaw.utf8String.parseJson
+        val rules = bodyJson.select("rules").asOpt[List[String]].getOrElse(List.empty)
+        val request = bodyJson.select("request").asOpt[JsObject].getOrElse(Json.obj())
+        val status = request.select("status").asOptInt
+        val statusTxt = status.flatMap(s => StatusCodes.get(s))
+        val requestCtx = RequestContext(
+          method = request.select("method").asOptString.getOrElse("GET"),
+          uri = request.select("uri").asOptString.getOrElse("/"),
+          headers = com.cloud.apim.seclang.model.Headers(request.select("headers").asOpt[Map[String, String]].map(_.mapValues(v => List(v))).getOrElse(Map.empty)),
+          cookies = request.select("cookies").asOpt[Map[String, String]].map(_.mapValues(v => List(v))).getOrElse(Map.empty),
+          query = request.select("query").asOpt[Map[String, String]].map(_.mapValues(v => List(v))).getOrElse(Map.empty),
+          body = request.select("body").asOpt[String].map(s => com.cloud.apim.seclang.model.ByteString(s)),
+          status = status,
+          statusTxt = statusTxt,
+          remoteAddr = "127.0.0.0",
+          remotePort = 56136,
+          protocol = request.select("protocol").asOptString.getOrElse("HTTP/1.1"),
+        )
+        println(requestCtx.json.prettify)
+        val res = factory.engine(rules).evaluate(requestCtx, List(1, 2, 3, 4, 5))
+        Results.Ok(Json.obj("done" -> true, "result" -> res.json)).vfuture
+      }
+    }).recover {
+      case e: Throwable => {
+        e.printStackTrace()
+        Results.Ok(Json.obj("done" -> false, "error" -> e.getMessage))
+      }
+    }
   }
 }
 

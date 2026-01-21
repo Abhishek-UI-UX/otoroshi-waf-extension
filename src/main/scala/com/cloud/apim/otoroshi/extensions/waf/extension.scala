@@ -252,7 +252,7 @@ class CloudApimWafExtension(val env: Env) extends AdminExtension {
         val bodyJson = bodyRaw.utf8String.parseJson
         val rules = bodyJson.select("rules").asOpt[List[String]].getOrElse(List.empty).filterNot(_.trim.startsWith("@import_preset ")).mkString("\n\n")
         (SecLang.parse(rules) match {
-          case Left(err) => Results.Ok(Json.obj("done" -> false, "error" -> err))
+          case Left(err) => Results.Ok(Json.obj("done" -> false, "error" -> err.msg))
           case Right(conf) => Try(SecLang.compile(conf)) match {
             case Failure(err) => Results.Ok(Json.obj("done" -> false, "error" -> err.getMessage))
             case Success(_) => Results.Ok(Json.obj("done" -> true))

